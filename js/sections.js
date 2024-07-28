@@ -113,12 +113,21 @@ var scrollVis = function () {
             .append('xhtml:div')
             .html(`
                 <p>
-                    We first take the country we want to find out
+                Step 1: Compare the price of Big Mac in two countries, A and B, by dividing its price in A's currency by B's. Here, B is the base currency. This will determine the exchange rate, E'. 
+                <br>
+                Step 2: E' is compared with the official exchange rate, E. 
+                <br>
+                Step 3: If E' is more significant than E, then currency A is overvalued; otherwise, it is undervalued.<br>
+                    To calculate the Big mac exchange rate, 
+                    <br>we first take the local price of the big mac in <br> 
+                    the targeted country and divide by the local price in United States for standarization
                     <br>
-                    Big mac exchange rate<br>
+                    
                     &yen;24.40<br>
                     -------- = 4.20<br>
                     &dollar;5.81
+
+
                 </p>
             `);
 
@@ -393,6 +402,7 @@ var scrollVis = function () {
 
         // Initial draw
         updateLollipop(selectedOption);
+        svg.selectAll('.lollipop').attr('opacity', 0);
 
         function updateLollipop(selectedDate) {
             // Filter and sort the data
@@ -623,9 +633,9 @@ var scrollVis = function () {
     function showLollipop() {
 
         g.selectAll('.calc-title')
-        .transition()
-        .duration(0)
-        .attr('opacity', 0);
+            .transition()
+            .duration(0)
+            .attr('opacity', 0);
 
         g.selectAll('.scatter, .x-axis, .y-axis, .x-label, .y-label')
             .transition()
