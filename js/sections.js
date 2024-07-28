@@ -402,11 +402,23 @@ var scrollVis = function () {
             // recover the option that has been chosen
             selectedOption = d3.select(this).property("value")
             // run the updateChart function with this selected option
-            //updateLollipop(selectedOption)
+            updateLollipop(selectedOption)
         })
 
         var filteredByDate = sourceData.filter(d => d.date === selectedOption);
-        filteredByDate = filteredByDate.sort((a, b) => (a['over_under_value'] > b['over_under_value']) ? 1 : ((b['over_under_value'] > a['over_under_value']) ? -1 : 0));
+        // filteredByDate = filteredByDate.sort((a, b) => (a['over_under_value'] > b['over_under_value']) ? 1 : ((b['over_under_value'] > a['over_under_value']) ? -1 : 0));
+        // Split the data into positive and negative
+        var negativeData = filteredByDate.filter(d => d.over_under_value < 0);
+        var positiveData = filteredByDate.filter(d => d.over_under_value >= 0);
+
+        // Sort the negative data in descending order
+        negativeData.sort((a, b) => (a['over_under_value'] > b['over_under_value']) ? -1 : ((b['over_under_value'] > a['over_under_value']) ? 1 : 0));
+
+        // Sort the positive data in ascending order
+        positiveData.sort((a, b) => (a['over_under_value'] > b['over_under_value']) ? 1 : ((b['over_under_value'] > a['over_under_value']) ? -1 : 0));
+
+        // Concatenate the data back together
+        filteredByDate = negativeData.concat(positiveData);
 
         var sortedNames = filteredByDate.map(d => d.name);
         // Add our plot
@@ -415,25 +427,23 @@ var scrollVis = function () {
             .domain(sortedNames)
             .padding(1);
         svg.append("g")
-            .attr('class', 'lolli-x-axis')
+            .attr('class', 'lollipop x-axis')
             .attr("transform", "translate(0," + height / 2 + ")")
             .call(d3.axisBottom(x))
             .selectAll("text")
-            .attr("transform", "translate(-10,0)rotate(-45)")
-            .style("text-anchor", "end");
+            .style("font-size", "0px");
 
         // Add Y axis
         var y = d3.scaleLinear()
             .domain([-100, 100])
             .range([height, 0]);
         svg.append("g")
-            .attr('class', 'lolli-y-axis')
+            .attr('class', 'lollipop y-axis')
             .attr("transform", "translate(" + width + " ,0)") // move y-axis to the right
-            .call(d3.axisRight(y)); // use d3.axisRight instead of d3.axisLeft
+            .call(d3.axisRight(y).tickFormat(function (d) { return d + '%'; }));
 
         // Lines
         svg.selectAll("myline")
-            .attr('class', 'lollipop')
             .data(filteredByDate)
             .enter()
             .append("line")
@@ -442,6 +452,7 @@ var scrollVis = function () {
             .attr("y1", function (d) { return y(d.over_under_value * 100); })
             .attr("y2", y(0))
             .attr("stroke", "grey")
+            .attr('class', 'lollipop lines')
 
         // tool tips
 
@@ -490,99 +501,169 @@ var scrollVis = function () {
             .attr("cy", function (d) { return y(d.over_under_value * 100); })
             .attr("r", "5")
             .style("fill", function (d) {
-                return d.over_under_value >= 0 ? "green" : "red";
+                return d.over_under_value >= 0 ? "#66ff00" : "#DA291C";
             }) // color based on positive or negative value
             .attr("stroke", "black")
+            .attr("class", "lollipop cicles")
             .on("mouseover", mouseover)
             .on("mousemove", mousemove)
-            .on("mouseleave", mouseleave)
+            .on("mouseleave", mouseleave);
 
-        svg.selectAll('.lolli-x-axis').attr('opacity', 0);
-        svg.selectAll('.lolli-y-axis').attr('opacity', 0);
+        // adds arrow
+        // Find the data for "United States"
+        var usData = filteredByDate.find(d => d.name === "United States");
+
+        // Check if "United States" exists in the data
+        if (usData) {
+            // Define the arrow marker
+            svg.append("defs").append("marker")
+                .attr("id", "arrow")
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 5)
+                .attr("refY", 0)
+                .attr("markerWidth", 3)
+                .attr("markerHeight", 3)
+                .attr("orient", "auto") // This will make the arrow point upwards
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5")
+                .attr("class", "lollipop arrowHead");
+
+            // Draw the arrow
+            svg.append("path")
+                .attr("class", "lollipop arrow")
+                .attr("marker-end", "url(#arrow)")
+                .attr("d", function () {
+                    var line = "M" + (x(usData.name) + x.bandwidth() / 2) + "," + (y(usData.over_under_value * 100) - 45); // Start the line below the circle
+                    line += " V" + y(usData.over_under_value * 100); // Draw the line upwards to the circle
+                    return line;
+                })
+                .style("stroke", "black") // Set the line color
+                .style("stroke-width", 2); // Set the line thickness
+
+            // Add the text label
+            svg.append("text")
+                .attr("x", x(usData.name) + x.bandwidth() / 2)
+                .attr("y", y(usData.over_under_value * 100) - 50) // Position the text above the start of the arrow
+                .text("Here's United States")
+                .attr("text-anchor", "middle") // Center the text
+                .attr("class", "lollipop us-label");
+        }
+
         svg.selectAll('.lollipop').attr('opacity', 0);
 
     }
 
     function updateLollipop(selectedDate) {
-
-        // Create new data with the selection
+        // Filter the data based on the selected date
         var filteredByDate = sourceData.filter(d => d.date === selectedDate);
 
-        // Update the X axis
-        var x = d3.scaleTime()
-            .domain(d3.extent(data, function (d) { return d.date; }))
-            .range([0, width]);
-        g.select('.x-axis')
+        // Split the data into positive and negative
+        var negativeData = filteredByDate.filter(d => d.over_under_value < 0);
+        var positiveData = filteredByDate.filter(d => d.over_under_value >= 0);
+
+        // Sort the negative data in descending order
+        negativeData.sort((a, b) => (a['over_under_value'] > b['over_under_value']) ? -1 : ((b['over_under_value'] > a['over_under_value']) ? 1 : 0));
+
+        // Sort the positive data in ascending order
+        positiveData.sort((a, b) => (a['over_under_value'] > b['over_under_value']) ? 1 : ((b['over_under_value'] > a['over_under_value']) ? -1 : 0));
+
+        // Concatenate the data back together
+        filteredByDate = negativeData.concat(positiveData);
+
+        var sortedNames = filteredByDate.map(d => d.name);
+
+        var x = d3.scaleBand()
+            .range([0, width])
+            .domain(sortedNames)
+            .padding(1);
+
+        // Add Y axis
+        var y = d3.scaleLinear()
+            .domain([-100, 100])
+            .range([height, 0]);
+        // Update the x scale domain
+        x.domain(sortedNames);
+
+        // Update the x-axis
+        svg.selectAll(".lollipop.x-axis")
             .transition()
             .duration(1000)
             .call(d3.axisBottom(x));
 
-        // Update the Y axis
-        var y = d3.scaleLinear()
-            .domain([0, d3.max(data, function (d) { return +d.local_price; })])
-            .range([height, 0]);
-        g.select('.y-axis')
+        // Update the y scale (if necessary)
+        // y.domain([-100, 100]); // Assuming the y scale remains the same
+
+        // Update the y-axis
+        svg.selectAll(".lollipop.y-axis")
             .transition()
             .duration(1000)
-            .call(d3.axisLeft(y));
+            .call(d3.axisRight(y).tickFormat(function (d) { return d + '%'; }));
 
-        d3.select("#y-label")
-            .text("Cost of a Big Mac in " + data[0]['currency_code']);
+        // Update the lines
+        var lines = svg.selectAll(".lollipop.lines")
+            .data(filteredByDate);
 
-        // Update the scatter plot
-        var scatterPlot = g.select('.scatter')
-            .selectAll("circle")
-            .data(data);
+        lines.enter()
+            .append("line")
+            .attr("class", "lollipop lines")
+            .merge(lines)
+            .transition()
+            .duration(1000)
+            .attr("x1", function (d) { return x(d.name); })
+            .attr("x2", function (d) { return x(d.name); })
+            .attr("y1", function (d) { return y(d.over_under_value * 100); })
+            .attr("y2", y(0))
+            .attr("stroke", "grey");
 
-        var tooltip = d3.select("#vis")
-            .append("div")
-            .style("opacity", 0)
-            .attr("class", "tooltip")
-            .style("background-color", "white")
-            .style("border", "solid")
-            .style("border-width", "1px")
-            .style("border-radius", "5px")
-            .style("padding", "10px")
+        lines.exit().remove();
 
-        var mouseover = function (d) {
-            tooltip
-                .style("opacity", 1)
-        }
+        // Update the circles
+        var circles = svg.selectAll(".lollipop.circles")
+            .data(filteredByDate);
 
-        var mousemove = function (d) {
-            tooltip
-                .html("PRICE: " + d.local_price)
-                .style("left", (d3.mouse(this)[0] + 90) + "px") // It is important to put the +90: other wise the tooltip is exactly where the point is an it creates a weird effect
-                .style("top", (d3.mouse(this)[1]) + "px")
-        }
-
-        // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
-        var mouseleave = function (d) {
-            tooltip
-                .transition()
-                .duration(200)
-                .style("opacity", 0)
-        }
-        scatterPlot.enter()
+        circles.enter()
             .append("circle")
-            .attr("cx", function (d) { return x(d.date); })
-            .attr("cy", function (d) { return y(d.local_price); })
-            .attr("r", 5)
-            .style("fill", "#DA291C")
-            .on("mouseover", mouseover)
-            .on("mousemove", mousemove)
-            .on("mouseleave", mouseleave)
-
-        scatterPlot
+            .attr("class", "lollipop circles")
+            .merge(circles)
             .transition()
             .duration(1000)
-            .attr("cx", function (d) { return x(d.date); })
-            .attr("cy", function (d) { return y(d.local_price); });
+            .attr("cx", function (d) { return x(d.name); })
+            .attr("cy", function (d) { return y(d.over_under_value * 100); })
+            .attr("r", "5")
+            .style("fill", function (d) {
+                return d.over_under_value >= 0 ? "#66ff00" : "#DA291C";
+            })
+            .attr("stroke", "black");
 
-        scatterPlot.exit().remove();
+        circles.exit().remove();
 
+        // Update the arrow and text label for "United States"
+        var usData = filteredByDate.find(d => d.name === "United States");
+
+        svg.selectAll(".lollipop.arrow, .lollipop.us-label").remove();
+
+        if (usData) {
+            // Draw the arrow
+            svg.append("path")
+                .attr("class", "lollipop arrow")
+                .attr("marker-end", "url(#arrow)")
+                .attr("d", function () {
+                    var line = "M" + (x(usData.name) + x.bandwidth() / 2) + "," + (y(usData.over_under_value * 100) - 45);
+                    line += " V" + y(usData.over_under_value * 100);
+                    return line;
+                })
+                .style("stroke", "black")
+                .style("stroke-width", 2);
+
+            // Add the text label
+            svg.append("text")
+                .attr("x", x(usData.name) + x.bandwidth() / 2)
+                .attr("y", y(usData.over_under_value * 100) - 50)
+                .text("Here's United States")
+                .attr("text-anchor", "middle")
+                .attr("class", "lollipop us-label");
+        }
     }
-
 
     /**
      * setupSections - each section is activated
@@ -686,9 +767,9 @@ var scrollVis = function () {
             .duration(600)
             .attr('opacity', 1.0);
 
-        g.selectAll('.lolli-y-axis')
+        svg.selectAll('.lollipop')
             .transition()
-            .duration(600)
+            .duration(0)
             .attr('opacity', 0);
 
     }
@@ -700,7 +781,7 @@ var scrollVis = function () {
             .duration(0)
             .attr('opacity', 0);
 
-        g.selectAll('.lolli-y-axis')
+        svg.selectAll('.lollipop')
             .transition()
             .duration(600)
             .attr('opacity', 1);
