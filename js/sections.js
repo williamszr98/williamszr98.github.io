@@ -1,5 +1,7 @@
 let dataByCountry
 let uniqueCountries
+let uniqueDates
+let sourceData
 /**
  * scrollVis - encapsulates
  * all the code for the visualization
@@ -87,8 +89,10 @@ var scrollVis = function () {
                 .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
             uniqueCountries = getUniqueNames(rawData).sort();
+            uniqueDates = getUniqueDates(rawData).sort();
             // Our country dictionary
             dataByCountry = processRawData(rawData);
+            sourceData = rawData;
 
             setupVis(uniqueCountries, dataByCountry);
 
@@ -169,6 +173,7 @@ var scrollVis = function () {
 
 
         drawScatter();
+        drawLollipop();
         setupSections();
 
 
@@ -192,7 +197,7 @@ var scrollVis = function () {
             // recover the option that has been chosen
             selectedOption = d3.select(this).property("value")
             // run the updateChart function with this selected option
-            update(selectedOption)
+            updateScatter(selectedOption)
         })
 
         // Add our scatter plot
@@ -295,7 +300,7 @@ var scrollVis = function () {
     }
 
     // A function that update the chart
-    function update(selectedGroup) {
+    function updateScatter(selectedGroup) {
 
 
         // Create new data with the selection
@@ -377,19 +382,206 @@ var scrollVis = function () {
     }
 
 
-    function PPPcalc(country) {
+    function drawLollipop() {
+
+        // Parse the Data
+
+        d3.select("#dateSelection")
+            .selectAll('myOptions')
+            .data(uniqueDates)
+            .enter()
+            .append('option')
+            .text(function (d) { return d; }) // text showed in the menu
+            .attr("value", function (d) { return d; }) // corresponding value returned by the button
+            .property("selected", function (d) { return d === "2024-01-01"; })
+
+        var selectedOption = "2024-01-01"
+
+        // When the button is changed, run the updateChart function
+        d3.select("#dateSelection").on("change", function (d) {
+            // recover the option that has been chosen
+            selectedOption = d3.select(this).property("value")
+            // run the updateChart function with this selected option
+            //updateLollipop(selectedOption)
+        })
+
+        var filteredByDate = sourceData.filter(d => d.date === selectedOption);
+        filteredByDate = filteredByDate.sort((a, b) => (a['over_under_value'] > b['over_under_value']) ? 1 : ((b['over_under_value'] > a['over_under_value']) ? -1 : 0));
+
+        var sortedNames = filteredByDate.map(d => d.name);
+        // Add our plot
+        var x = d3.scaleBand()
+            .range([0, width])
+            .domain(sortedNames)
+            .padding(1);
+        svg.append("g")
+            .attr('class', 'lolli-x-axis')
+            .attr("transform", "translate(0," + height / 2 + ")")
+            .call(d3.axisBottom(x))
+            .selectAll("text")
+            .attr("transform", "translate(-10,0)rotate(-45)")
+            .style("text-anchor", "end");
+
+        // Add Y axis
+        var y = d3.scaleLinear()
+            .domain([-100, 100])
+            .range([height, 0]);
+        svg.append("g")
+            .attr('class', 'lolli-y-axis')
+            .attr("transform", "translate(" + width + " ,0)") // move y-axis to the right
+            .call(d3.axisRight(y)); // use d3.axisRight instead of d3.axisLeft
+
+        // Lines
+        svg.selectAll("myline")
+            .attr('class', 'lollipop')
+            .data(filteredByDate)
+            .enter()
+            .append("line")
+            .attr("x1", function (d) { return x(d.name); })
+            .attr("x2", function (d) { return x(d.name); })
+            .attr("y1", function (d) { return y(d.over_under_value * 100); })
+            .attr("y2", y(0))
+            .attr("stroke", "grey")
+
+        // tool tips
+
+        // Add a tooltip div. Here I define the general feature of the tooltip: stuff that do not depend on the data point.
+        var tooltip = d3.select("#vis")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
 
 
-        var selectedCountry = dataByCountry["Hong Kong"];
+        // A function that change this tooltip when the user hover a point.
+        // Its opacity is set to 1: we can now see it. Plus it set the text and position of tooltip depending on the datapoint (d)
+        var mouseover = function (d) {
+            var scatterOpacity = d3.select(".lollipop").style("opacity");
+            if (scatterOpacity != 0) {
+                tooltip.style("opacity", 1);
+            }
+        }
 
-        var unitedStates = dataByCountry["United States"];
+        var mousemove = function (d) {
+            tooltip
+                .html("VALUE: " + d.over_under_value + "<br>Country: " + d.name)
+                .style("left", (d3.mouse(this)[0] + 90) + "px") // It is important to put the +90: other wise the tooltip is exactly where the point is an it creates a weird effect
+                .style("top", (d3.mouse(this)[1]) + "px")
+        }
 
-        var bigMacExRate = selectedCountry["local_price"] / unitedStates["local_price"]
+        // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+        var mouseleave = function (d) {
+            tooltip
+                .transition()
+                .duration(200)
+                .style("opacity", 0)
+        }
 
+        // Circles
+        svg.selectAll("mycircle")
+            .data(filteredByDate)
+            .enter()
+            .append("circle")
+            .attr("cx", function (d) { return x(d.name); })
+            .attr("cy", function (d) { return y(d.over_under_value * 100); })
+            .attr("r", "5")
+            .style("fill", function (d) {
+                return d.over_under_value >= 0 ? "green" : "red";
+            }) // color based on positive or negative value
+            .attr("stroke", "black")
+            .on("mouseover", mouseover)
+            .on("mousemove", mousemove)
+            .on("mouseleave", mouseleave)
 
+        svg.selectAll('.lolli-x-axis').attr('opacity', 0);
+        svg.selectAll('.lolli-y-axis').attr('opacity', 0);
+        svg.selectAll('.lollipop').attr('opacity', 0);
 
     }
 
+    function updateLollipop(selectedDate) {
+
+        // Create new data with the selection
+        var filteredByDate = sourceData.filter(d => d.date === selectedDate);
+
+        // Update the X axis
+        var x = d3.scaleTime()
+            .domain(d3.extent(data, function (d) { return d.date; }))
+            .range([0, width]);
+        g.select('.x-axis')
+            .transition()
+            .duration(1000)
+            .call(d3.axisBottom(x));
+
+        // Update the Y axis
+        var y = d3.scaleLinear()
+            .domain([0, d3.max(data, function (d) { return +d.local_price; })])
+            .range([height, 0]);
+        g.select('.y-axis')
+            .transition()
+            .duration(1000)
+            .call(d3.axisLeft(y));
+
+        d3.select("#y-label")
+            .text("Cost of a Big Mac in " + data[0]['currency_code']);
+
+        // Update the scatter plot
+        var scatterPlot = g.select('.scatter')
+            .selectAll("circle")
+            .data(data);
+
+        var tooltip = d3.select("#vis")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+
+        var mouseover = function (d) {
+            tooltip
+                .style("opacity", 1)
+        }
+
+        var mousemove = function (d) {
+            tooltip
+                .html("PRICE: " + d.local_price)
+                .style("left", (d3.mouse(this)[0] + 90) + "px") // It is important to put the +90: other wise the tooltip is exactly where the point is an it creates a weird effect
+                .style("top", (d3.mouse(this)[1]) + "px")
+        }
+
+        // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+        var mouseleave = function (d) {
+            tooltip
+                .transition()
+                .duration(200)
+                .style("opacity", 0)
+        }
+        scatterPlot.enter()
+            .append("circle")
+            .attr("cx", function (d) { return x(d.date); })
+            .attr("cy", function (d) { return y(d.local_price); })
+            .attr("r", 5)
+            .style("fill", "#DA291C")
+            .on("mouseover", mouseover)
+            .on("mousemove", mousemove)
+            .on("mouseleave", mouseleave)
+
+        scatterPlot
+            .transition()
+            .duration(1000)
+            .attr("cx", function (d) { return x(d.date); })
+            .attr("cy", function (d) { return y(d.local_price); });
+
+        scatterPlot.exit().remove();
+
+    }
 
 
     /**
@@ -405,7 +597,7 @@ var scrollVis = function () {
         activateFunctions[0] = showTitle;
         activateFunctions[1] = showCalculation;
         activateFunctions[2] = showScatterPlot;
-        activateFunctions[3] = showBarchart;
+        activateFunctions[3] = showLollipop;
         activateFunctions[4] = showBarchart;
         activateFunctions[5] = showBarchart;
 
@@ -439,13 +631,13 @@ var scrollVis = function () {
      */
 
     /**
- * showTitle - initial title
- *
- * hides: count title
- * (no previous step to hide)
- * shows: intro title
- *
- */
+    * showTitle - initial title
+    *
+    * hides: count title
+    * (no previous step to hide)
+    * shows: intro title
+    *
+    */
     function showTitle() {
 
         g.selectAll('.calc-title')
@@ -493,6 +685,26 @@ var scrollVis = function () {
             .transition()
             .duration(600)
             .attr('opacity', 1.0);
+
+        g.selectAll('.lolli-y-axis')
+            .transition()
+            .duration(600)
+            .attr('opacity', 0);
+
+    }
+
+    function showLollipop() {
+
+        g.selectAll('.scatter, .x-axis, .y-axis, .x-label, .y-label')
+            .transition()
+            .duration(0)
+            .attr('opacity', 0);
+
+        g.selectAll('.lolli-y-axis')
+            .transition()
+            .duration(600)
+            .attr('opacity', 1);
+
     }
 
     function showBarchart() {
@@ -509,12 +721,12 @@ var scrollVis = function () {
 
 
     /**
- * showAxis - helper function to
- * display particular xAxis
- *
- * @param axis - the axis to show
- *  (xAxisHist or xAxisBar)
- */
+    * showAxis - helper function to
+    * display particular xAxis
+    *
+    * @param axis - the axis to show
+    *  (xAxisHist or xAxisBar)
+    */
     function showAxis(axis) {
         g.select('.x.axis')
             .call(axis)
@@ -580,6 +792,11 @@ var scrollVis = function () {
         return d3.set(names).values();
     }
 
+    function getUniqueDates(data) {
+        var dates = data.map(function (d) { return d.date; });
+        return d3.set(dates).values();
+    }
+
     function processRawData(rawData) {
         var dataByCountry = {};
 
@@ -600,14 +817,15 @@ var scrollVis = function () {
                 dollar_ex: row.dollar_ex,
                 GDP_dollar: row.GDP_dollar,
                 GDP_local: row.GDP_local,
-                date: date
+                date: date,
+                us_local_price: row.us_local_price,
+                big_mac_ex: row.big_mac_ex,
+                over_under_value: row.over_under_value
             });
         });
 
         return dataByCountry;
     }
-
-
 
     /**
      * activate -
@@ -678,4 +896,4 @@ function display(data) {
 }
 
 // load data and display
-d3.csv('data/big-mac-source-data-v2.csv', display);
+d3.csv('data/processed-big-mac-source-data.csv', display);
