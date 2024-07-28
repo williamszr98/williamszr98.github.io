@@ -1,7 +1,3 @@
-let dataByCountry
-let uniqueCountries
-let uniqueDates
-let sourceData
 /**
  * scrollVis - encapsulates
  * all the code for the visualization
@@ -9,6 +5,15 @@ let sourceData
  * http://bost.ocks.org/mike/chart/
  */
 var scrollVis = function () {
+
+    // Store data
+    var dataByCountry
+    var uniqueCountries
+    var uniqueDates
+    var sourceData
+
+    // Store current section
+    var currentSection = 0;
     // constants to define the size
     // and margins of the vis area.
     var width = 600;
@@ -154,6 +159,7 @@ var scrollVis = function () {
 
         drawScatter();
         drawLollipop();
+        pppScatter();
         setupSections();
 
 
@@ -204,12 +210,12 @@ var scrollVis = function () {
             .domain([0, d3.max(data, function (d) { return +d.local_price; })])
             .range([height, 0]);
         g.append("g")
-            .attr('class', 'y-axis')
+            .attr('class', 'yearscatter y-axis')
             .call(d3.axisLeft(y));
 
         g.append("text")
             .attr("id", "y-label")
-            .attr("class", "y-label")
+            .attr("class", "yearscatter y-label")
             .attr("text-anchor", "end")
             .attr("y", 6)
             .attr("dy", ".75em")
@@ -222,7 +228,7 @@ var scrollVis = function () {
         var tooltip = d3.select("#vis")
             .append("div")
             .style("opacity", 0)
-            .attr("class", "tooltip")
+            .attr("class", "yearscatter tooltip")
             .style("background-color", "white")
             .style("border", "solid")
             .style("border-width", "1px")
@@ -233,7 +239,7 @@ var scrollVis = function () {
         // A function that change this tooltip when the user hover a point.
         // Its opacity is set to 1: we can now see it. Plus it set the text and position of tooltip depending on the datapoint (d)
         var mouseover = function (d) {
-            var scatterOpacity = d3.select(".scatter").style("opacity");
+            var scatterOpacity = d3.select(".yearscatter dots").style("opacity");
             if (scatterOpacity != 0) {
                 tooltip.style("opacity", 1);
             }
@@ -256,7 +262,7 @@ var scrollVis = function () {
 
         // Add dots
         g.append('g')
-            .attr('class', 'scatter')
+            .attr('class', 'yearscatter dots')
             .selectAll("dot")
             .data(data)
             .enter()
@@ -272,11 +278,7 @@ var scrollVis = function () {
 
 
         // Its opacity is set to 0: we don't see it by default.
-        g.selectAll('.x-axis').attr('opacity', 0);
-        g.selectAll('.y-axis').attr('opacity', 0);
-        g.selectAll('.y-label').attr('opacity', 0);
-        g.selectAll('.x-label').attr('opacity', 0);
-        g.selectAll('.scatter').attr('opacity', 0);
+        g.selectAll('.yearscatter').attr('opacity', 0);
     }
 
     // A function that update the chart
@@ -290,7 +292,7 @@ var scrollVis = function () {
         var x = d3.scaleTime()
             .domain(d3.extent(data, function (d) { return d.date; }))
             .range([0, width]);
-        g.select('.x-axis')
+        g.select('x-axis')
             .transition()
             .duration(1000)
             .call(d3.axisBottom(x));
@@ -299,7 +301,7 @@ var scrollVis = function () {
         var y = d3.scaleLinear()
             .domain([0, d3.max(data, function (d) { return +d.local_price; })])
             .range([height, 0]);
-        g.select('.y-axis')
+        g.select('y-axis')
             .transition()
             .duration(1000)
             .call(d3.axisLeft(y));
@@ -308,14 +310,14 @@ var scrollVis = function () {
             .text("Cost of a Big Mac in " + data[0]['currency_code']);
 
         // Update the scatter plot
-        var scatterPlot = g.select('.scatter')
+        var scatterPlot = g.select('.yearscatter dots')
             .selectAll("circle")
             .data(data);
 
         var tooltip = d3.select("#vis")
             .append("div")
             .style("opacity", 0)
-            .attr("class", "tooltip")
+            .attr("class", "yearscatter tooltip")
             .style("background-color", "white")
             .style("border", "solid")
             .style("border-width", "1px")
@@ -501,27 +503,33 @@ var scrollVis = function () {
         }
 
         function mouseover(d) {
-            tooltip.style("opacity", 1);
-            hoverText.style("opacity", 1);
+            if (currentSection === 2) {
+                tooltip.style("opacity", 1);
+                hoverText.style("opacity", 1);
+            }
         }
 
         function mousemove(d) {
-            var mousePos = d3.mouse(this);
-            tooltip.html("Country: " + d.name + "<br>Valued: " + (d.over_under_value * 100).toFixed(2) + "%" + "<br>Actual exchange to USD: " + d.dollar_ex)
-                .style("left", (mousePos[0] + 90) + "px")
-                .style("top", (mousePos[1]) + "px");
+            if (currentSection === 2) {
+                var mousePos = d3.mouse(this);
+                tooltip.html("Country: " + d.name + "<br>Valued: " + (d.over_under_value * 100).toFixed(2) + "%" + "<br>Actual exchange to USD: " + d.dollar_ex)
+                    .style("left", (mousePos[0] + 90) + "px")
+                    .style("top", (mousePos[1]) + "px");
 
-            hoverText
-                .text(d.over_under_value >= 0 ? "Overvalued" : "Undervalued")
-                .attr("x", mousePos[0])
-                .attr("y", mousePos[1] - 20)  // Adjust -20 for text to be above the circle
-                .style("font-size", "16px")  // Increase font size here
-                .style("font-weight", "bold");
+                hoverText
+                    .text(d.over_under_value >= 0 ? "Overvalued" : "Undervalued")
+                    .attr("x", mousePos[0])
+                    .attr("y", mousePos[1] - 20)  // Adjust -20 for text to be above the circle
+                    .style("font-size", "16px")  // Increase font size here
+                    .style("font-weight", "bold");
+            }
         }
 
         function mouseleave(d) {
-            tooltip.transition().duration(200).style("opacity", 0);
-            hoverText.style("opacity", 0);
+            if (currentSection === 2) {
+                tooltip.transition().duration(200).style("opacity", 0);
+                hoverText.style("opacity", 0);
+            }
         }
 
         var tooltip = d3.select("#vis")
@@ -535,8 +543,136 @@ var scrollVis = function () {
             .style("padding", "10px");
     }
 
+    function pppScatter() {
+        // // Remove any existing SVG element to avoid conflicts
+        // d3.select("#vis svg").remove();
+    
+        // Append a new group for the PPP scatter plot
+        var svg = d3.select("svg");
 
+        d3.select("#PPPselectButton")
+            .selectAll('option')
+            .data(uniqueCountries)
+            .enter()
+            .append('option')
+            .text(d => d)
+            .attr("value", d => d)
+            .property("selected", d => d === "United States");
+    
+        var selectedOption = "United States";
+        d3.select("#PPPselectButton").on("change", function () {
+            selectedOption = d3.select(this).property("value");
+            updatePPPScatter(selectedOption);
+        });
+    
+        // Initial draw
+        updatePPPScatter(selectedOption);
 
+        svg.selectAll('.pppscatter').attr('opacity', 0);
+    
+        function updatePPPScatter(selectedGroup) {
+            var data = dataByCountry[selectedGroup];
+    
+            var x = d3.scaleLinear()
+                .domain([d3.min(data, d => +d.GDP_local), d3.max(data, d => +d.GDP_local)])
+                .range([0, width]);
+            var y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => +d.local_price)])
+                .range([height, 0]);
+    
+            // Remove old axes and labels
+            svg.selectAll(".x-axis").remove();
+            svg.selectAll(".y-axis").remove();
+            svg.selectAll(".x-label").remove();
+            svg.selectAll(".y-label").remove();
+    
+            // Add new X axis
+            svg.append("g")
+                .attr('class', 'pppscatter x-axis')
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+    
+            svg.append("text")
+                .attr("class", "pppscatter x-label")
+                .attr("text-anchor", "end")
+                .attr("x", width)
+                .attr("y", height + margin.top - 10)
+                .text("GDP per Capita (" + data[0]['currency_code'] + ")");
+    
+            // Add new Y axis
+            svg.append("g")
+                .attr('class', 'pppscatter y-axis')
+                .call(d3.axisLeft(y));
+    
+            svg.append("text")
+                .attr("id", "ppp-y-label")
+                .attr("class", "pppscatter y-label")
+                .attr("text-anchor", "end")
+                .attr("y", -margin.left + 10)
+                .attr("x", -margin.top)
+                .attr("dy", ".75em")
+                .attr("transform", "rotate(-90)")
+                .text("Cost of a Big Mac in " + data[0]['currency_code']);
+    
+            // Update or create tooltip
+            var tooltip = d3.select(".pppscatter.tooltip");
+            if (tooltip.empty()) {
+                tooltip = d3.select("#vis")
+                    .append("div")
+                    .attr("class", "pppscatter tooltip")
+                    .style("opacity", 0)
+                    .style("background-color", "white")
+                    .style("border", "solid 1px")
+                    .style("border-radius", "5px")
+                    .style("padding", "10px");
+            }
+    
+            var mouseover = function (d) {
+                if (currentSection === 3) {
+                    tooltip.style("opacity", 1);
+                }
+            };
+    
+            var mousemove = function (d) {
+                if (currentSection === 3) {
+                    tooltip
+                        .html("Local Price of a BigMac: " + d.local_price + "<br>GDP per Capita in " + data[0]['currency_code'] + ": " + d.GDP_local)
+                        .style("left", (d3.mouse(this)[0] + 90) + "px")
+                        .style("top", (d3.mouse(this)[1]) + "px");
+                }
+            };
+    
+            var mouseleave = function (d) {
+                if (currentSection === 3) {
+                    tooltip.transition().duration(200).style("opacity", 0);
+                }
+            };
+    
+            // Bind data and update dots
+            var dots = svg.selectAll(".pppscatter.dot")
+                .data(data);
+    
+            dots.enter()
+                .append("circle")
+                .attr("class", "pppscatter dot")
+                .attr("cx", d => x(d.GDP_local))
+                .attr("cy", d => y(d.local_price))
+                .attr("r", 5)
+                .style("fill", "#DA291C")
+                .on("mouseover", mouseover)
+                .on("mousemove", mousemove)
+                .on("mouseleave", mouseleave)
+                .merge(dots)
+                .transition()
+                .duration(1000)
+                .attr("cx", d => x(d.GDP_local))
+                .attr("cy", d => y(d.local_price));
+    
+            dots.exit().remove();
+        }
+    }
+    
+    
 
 
 
@@ -553,8 +689,8 @@ var scrollVis = function () {
         activateFunctions[0] = showTitle;
         activateFunctions[1] = showCalculation;
         activateFunctions[2] = showLollipop;
-        activateFunctions[3] = showScatterPlot;
-        activateFunctions[4] = showBarchart;
+        activateFunctions[3] = showPPPscatter;
+        activateFunctions[4] = showScatterPlot;
         activateFunctions[5] = showBarchart;
 
 
@@ -596,6 +732,8 @@ var scrollVis = function () {
     */
     function showTitle() {
 
+        currentSection = 0;
+
         g.selectAll('.calc-title')
             .transition()
             .duration(0)
@@ -610,6 +748,8 @@ var scrollVis = function () {
     }
 
     function showCalculation() {
+
+        currentSection = 1;
 
         g.selectAll('.openvis-title')
             .transition()
@@ -632,12 +772,14 @@ var scrollVis = function () {
 
     function showLollipop() {
 
+        currentSection = 2;
+
         g.selectAll('.calc-title')
             .transition()
             .duration(0)
             .attr('opacity', 0);
 
-        g.selectAll('.scatter, .x-axis, .y-axis, .x-label, .y-label')
+        svg.selectAll('.pppscatter')
             .transition()
             .duration(0)
             .attr('opacity', 0);
@@ -649,14 +791,36 @@ var scrollVis = function () {
 
     }
 
-    function showScatterPlot() {
+    function showPPPscatter() {
+
+        currentSection = 3;
 
         svg.selectAll('.lollipop')
             .transition()
             .duration(0)
             .attr('opacity', 0);
+        
+        svg.selectAll('.yearscatter')
+            .transition()
+            .duration(0)
+            .attr('opacity', 0);
 
-        g.selectAll('.scatter, .x-axis, .y-axis, .x-label, .y-label')
+        svg.selectAll('.pppscatter')
+            .transition()
+            .duration(600)
+            .attr('opacity', 1.0);
+
+            
+    }
+
+    function showScatterPlot() {
+
+        svg.selectAll('.pppscatter')
+            .transition()
+            .duration(0)
+            .attr('opacity', 0);
+
+        g.selectAll('.yearscatter')
             .transition()
             .duration(600)
             .attr('opacity', 1.0);
@@ -665,7 +829,7 @@ var scrollVis = function () {
 
     function showBarchart() {
 
-        g.selectAll('.scatter, .x-axis, .y-axis')
+        g.selectAll('.yearscatter')
             .transition()
             .duration(0)
             .attr('opacity', 0.);
@@ -673,22 +837,6 @@ var scrollVis = function () {
     }
 
 
-
-
-
-    /**
-    * showAxis - helper function to
-    * display particular xAxis
-    *
-    * @param axis - the axis to show
-    *  (xAxisHist or xAxisBar)
-    */
-    function showAxis(axis) {
-        g.select('.x.axis')
-            .call(axis)
-            .transition().duration(500)
-            .style('opacity', 1);
-    }
 
 
     /**
