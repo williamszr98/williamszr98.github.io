@@ -16,23 +16,26 @@
         <section class="step">
           <div class="title"></div>
           <br><br>
-          <h1> Big Mac prices overtime </h1>
-          <p>By William Su</p>
+          <h1> Introduction to the Big Mac Index </h1>
+          <p>By William Su <br>ws27@illinois.edu</p>
           <p>(Note: If the visualisation doesn't fit your screen, try zooming out with ctrl + - / Cmd + -.) </p>
           <p>
-            The Big Mac Index was invented by The Economist in 1986.
-            It is intended to be a lighthearted way to demonstrate the concept of purchasing power parity.
-            In other words, it helps illustrate the idea that market exchange rates between countries may be "out of
-            whack" when compared to the cost of buying the same basket of goods and services in those places.
+            The Big Mac Index was introduced by The Economist in 1986 as an alternative way to illustrate purchasing
+            power parity (PPP).
+            PPP is the concept that market exchange rates between countries may not always accurately reflect the true
+            value of currencies due to various uncontrolled factors.
+            <br>The Big Mac Index helps us get a better sense of what PPP might actually be.
+            <br><br>
+            Given that McDonald's is the largest fast food chain globally, its ubiquitous presence makes the Big Mac an
+            ideal standard for comparison across countries.
 
-            Given that McDonald’s is one of the biggest companies in the world and the Big Mac ubiquitous around the world, 
-            it means that the famous burger can be used as a basic goods comparison between most countries. It
-            also has the advantage of having the same inputs and distribution system, with a few minor modifications
+            It also has the advantage of having the same inputs and distribution system, with a few minor modifications
             (like chicken patties in India instead of beef).
 
             <br><br>
 
-            If you ever want to find out more about a bubble, just hover over it and a tooltip should appear.<br><br>
+            Tips: If you ever want to find out more about a point, just hover over it and a tooltip should
+            appear.<br><br>
 
             (Data was provided by The Economist https://github.com/TheEconomist/big-mac-data/tree/master)
           </p>
@@ -41,7 +44,7 @@
           <div class="title">How to calculate it?</div>
 
           <p>
-            We first take the country we want to find out
+            To give an example on how to calculate the Big Mac exchange rate
 
           </p>
 
@@ -50,47 +53,71 @@
 
         <section class="step">
           <div class="title">The Big Mac Index and Currency Strength</div>
-          <p>Here we can see the equation being worked out and displayed in a lollipop graph, we marked green as overvalued and red as undervalued</p>
-          <br>
-          <p>Feel free to hover over the points to get the detail of each country</p>
-          <p>You can also change the date here:</p>
+          <p>Here we can see the equation being worked out and displayed in a lollipop graph.</p>
+          <p>Our lollipop graph visually represents this by marking currencies in green if they are overvalued and in red if they are undervalued. We identify which currencies are stronger or weaker relative to the US dollar by hovering over them.</p>
+          <p>Use the date selection dropdown to view how these valuations have changed over time. This allows you to see trends and fluctuations in currency strength, providing insights into economic conditions and market behaviors.:</p>
           <select id="dateSelection"></select>
         </section>
 
         <section class="step">
           <div class="title">Purchasing Power Parity</div>
-          <p> We  mentioned before that the Big Mac Index can be used as a measure of Purchasing Power polarity.
+          <p> We mentioned before that the Big Mac Index can be used as a measure of Purchasing Power polarity.
             <br><br>
-            Here we can see a scatter Plot of Big Mac Prices vs. GDP per Capita
+            Our scatter plot displays Big Mac prices versus GDP per capita. We can see how the cost of a Big Mac correlates with the economic wealth of a country.
+            Higher GDP per capita generally correlates with higher Big Mac prices, reflecting higher living costs in wealthier countries.
             <br>
-            You can also see that the cost of a Big Mac goes up with the GDP of the nation
+            <p>Switzerland's Big Mac seems to to not be affected that much by the GDP, but they also have the most expensive Big Mac in the world.</p>
+            Use the dropdown menu to filter and compare different countries.
             <select id="PPPselectButton"></select>
           </p>
         </section>
 
         <section class="step">
-          <div class="title">Affordability Comparison</div>
+          <div class="title">Big Mac Prices Throughout the Years</div>
+          <p>Here we can explore the prices of the Big Mac for different country.</p>
+          <br>
+          <p>Most countries exhibit a consistent increase in Big Mac prices over the years, reflecting inflation and rising costs. However, some countries may show more variability due to economic instability or currency fluctuations.</p>
+          <br>
+          <p>You can check out different countries here</p>
           <select id="selectButton"></select>
-          Affordability Comparison.
         </section>
 
         <section class="step">
           <div class="title">Historical Trends</div>
-          Content: Show scatter plot with points in time in history where economic impact happened
-          <br>
-          We can actually use the histroical trend data to see major economic impacts
+          The Big Mac pricing data can be used to see major world events and economic impacts
+          <br><br>
+          <p>Like here, we can see a huge spike in pricing from 2014 to 2017 due to the Russian financial crisis.
+            A loss of confidence in the Russian economy prompted investors to offload their Russian assets, resulting in
+            a drop in the value of the Russian rouble.
+            <br><br>
+            A decline in the value of the Russian rouble typically makes imported goods more expensive due to the higher
+            cost of foreign currency.
+            Since some ingredients for a Big Mac might be imported, this might be one of the reason why the price spiked
+            so much.
+          </p>
 
 
 
         </section>
         <section class="step">
           <div class="title">Conclusion</div>
-          Content: Summarize the key insights from the visualization and discuss the implications of the Big Mac Index
-          on understanding global economics.
-          Additional Tips:
-          Tooltips: Add tooltips to provide more detailed information when users hover over data points.
-          Responsive Design: Ensure the visualization is responsive and works well on different devices.
-          Color Coding: Use consistent color coding to differentiate between countries and data types..
+          <p>
+            In summary, the Big Mac Index offers a fascinating way to grasp the concept of Purchasing Power Parity (PPP)
+            by comparing the price of a Big Mac across different countries. This simple yet powerful tool helps us
+            understand how currencies measure up against each other, not just on paper but in real-world terms.
+            <br><br>
+            Throughout this exploration, we've seen how the Big Mac Index reveals the relative strength of currencies
+            and provides insights into broader economic conditions. It highlights how currency values can be over or
+            undervalued and showcases the impact of significant global events on pricing. For instance, the spike in Big
+            Mac prices during the Russian financial crisis illustrates how currency devaluation can affect the cost of
+            everyday items.
+            <br><br>
+            By visualizing these trends and fluctuations, we gain a clearer picture of how economic policies and global
+            events shape the prices we pay. The Big Mac Index, while simple in concept, gives us a tangible way to
+            understand complex economic dynamics and their real-world implications.
+          </p>
+
+
         </section>
       </div>
       <div id='vis'>
